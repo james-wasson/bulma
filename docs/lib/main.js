@@ -151,6 +151,66 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  var $genericToggles = getAll('.bd-toggle');
+  $genericToggles.forEach(function ($el) {
+    var $targets = getAll($el.dataset.target);
+    var targetClasses = splitNoEmpy($el.dataset.targetClass || '', ' ');
+    var ownClasses = splitNoEmpy($el.dataset.ownClass || '', ' ');
+    $el.addEventListener('click', function () {
+      targetClasses.forEach(function (targetClass) {
+        return $targets.forEach(function ($target) {
+          return $target.classList.toggle(targetClass);
+        });
+      });
+      ownClasses.forEach(function (ownClass) {
+        return $el.classList.toggle(ownClass);
+      });
+    });
+  });
+
+  var $genericRadioToggles = getAll('.bd-toggle-radio-group');
+  $genericRadioToggles.forEach(function ($group) {
+    var childSelector = $group.dataset.childSelector || '';
+    var $childNodes = childSelector.length > 0 ? getAll(childSelector, $group) : Array.prototype.slice.call($group.children, 0);
+    var $radios = $childNodes.filter(function ($child) {
+      return $child.classList.contains('bd-toggle-radio');
+    });
+    var $targets = getAll($group.dataset.target);
+    var radioData = $radios.map(function ($radio) {
+      var self = {};
+      self.$element = $radio;
+      self.targetClasses = splitNoEmpy($radio.dataset.targetClass || '', ' ');
+      self.ownClasses = splitNoEmpy($radio.dataset.ownClass || '', ' ');
+      self.isActive = ($radio.dataset.active || '').toLowerCase() == "true";
+      self.toggle = function () {
+        // toggle targets
+        self.targetClasses.forEach(function (targetClass) {
+          return $targets.forEach(function ($target) {
+            return $target.classList.toggle(targetClass);
+          });
+        });
+        // toggle self
+        self.ownClasses.forEach(function (ownClass) {
+          return self.$element.classList.toggle(ownClass);
+        });
+        self.isActive = !self.isActive;
+      };
+      self.onClick = function () {
+        radioData.filter(function (other) {
+          return other.isActive;
+        }).forEach(function (other) {
+          return other.toggle();
+        });
+        self.toggle();
+      };
+      return self;
+    });
+    // handle click and inital isActive
+    radioData.forEach(function (data) {
+      data.$element.addEventListener('click', data.onClick);
+    });
+  });
+
   // Modals
 
   var rootEl = document.documentElement;
@@ -262,8 +322,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Functions
 
-  function getAll(selector) {
-    return Array.prototype.slice.call(document.querySelectorAll(selector), 0);
+  function getAll(selector, $context) {
+    $context = $context || document;
+    if (selector.length <= 0) return [];
+    return Array.prototype.slice.call($context.querySelectorAll(selector), 0);
+  }
+
+  function splitNoEmpy(str, splitby) {
+    return str.split(splitby).filter(function (p) {
+      return p.length > 0;
+    });
   }
 
   // Scrolling
